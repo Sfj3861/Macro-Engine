@@ -1,46 +1,67 @@
-# Hit Borderless
+# Macro Engine
 
-A Geode toolkit for Geometry Dash, starting with **Macro Engine**: reliable input recording and a native macro format that will power later analysis tools.
+A Geode toolkit for Geometry Dash focused on reliable input macros, playback, analysis and trajectory visualization.
 
-## Current development status
+## Project modules
 
-### Implemented in the initial source scaffold
-- Pause-menu control to start a macro recording.
-- Capture of gameplay press/release events.
-- Separate P1/P2 event field.
-- Frame counter driven by `PlayLayer::postUpdate`.
-- Monotonic microsecond timestamp for each event.
-- Automatic JSON-based `.hbmacro` save when stopping or leaving a level.
+- **Macro Recorder:** captures input transitions, timing and player identity.
+- **Macro Player:** planned deterministic playback with compatibility checks.
+- **Macro Analyzer:** planned event, frame and run analysis.
+- **Frame Counter:** planned display normalized to a 240 FPS reference while retaining original timing.
+- **Hit Borderless:** planned trajectory and collision-context visualization. It is not merely a hitbox viewer.
+- **Layout Mode:** planned simplified level rendering that preserves gameplay geometry and physics.
+- **Showcase Recorder:** planned tools for recording and presenting runs.
 
-### Planned next
-1. Macro library browser and loader.
-2. Macro playback with compatibility checks.
-3. Import/export adapters for `.grd`, `.gdr.json`, and `.gdr2`.
-4. Macro timeline editor.
-5. Frame Window Analyzer and Hit Borderless hitbox visualization.
-6. Layout Mode and Showcase tools.
+## Hit Borderless visual language
+
+The planned overlay uses:
+- A thin yellow line for the player's sampled trajectory.
+- Dark-yellow circles for press events and white circles for release events.
+- Red lines for lethal collision boundaries.
+- Dark-blue lines for solid/supporting surfaces.
+- Green lines for orbs and other special interactive objects.
+
+The long-term analyzer should distinguish current survival, danger and a mathematically/physically unavoidable death. It must not label a death inevitable merely because a sprite overlaps a visual decoration: collision geometry, movement state, physics and possible future inputs matter.
+
+## Current implementation
+
+The initial recorder scaffold is present:
+- Pause-menu controls to start and stop a recording.
+- Press/release event capture.
+- P1/P2 identity.
+- Game command-frame index and monotonic microsecond timestamps.
+- PlayLayer update-step count.
+- JSON-based macro file output.
+
+This is an early recording scaffold, not yet a complete macro system. Playback, robust file validation, imported formats, trajectory rendering and collision analysis are not implemented.
+
+## Development order
+
+1. Stabilize recording and the native macro data model.
+2. Add a macro library, loading and validation.
+3. Implement playback and compatibility safeguards.
+4. Add format import/export adapters after inspecting real sample files.
+5. Build timeline editing and event analysis.
+6. Implement trajectory sampling and the Hit Borderless overlay.
+7. Add collision/physics-based survivability analysis.
+8. Add Layout Mode and Showcase Recorder.
+
+## Timing model
+
+Macro Engine keeps separate timing references:
+- The game's command index.
+- PlayLayer update steps.
+- A monotonic microsecond timestamp.
+- A future 240 FPS normalized display frame.
+
+These clocks are not interchangeable. Normalized display frames must be derived from measured event timing, not by assuming the device refresh rate equals the simulation update rate.
 
 ## Build
 
-Install the Geode SDK and CLI, then configure `GEODE_SDK` to point to your SDK directory.
+Install the Geode SDK and CLI, then configure `GEODE_SDK` to point to the SDK directory.
 
 ```sh
 geode build
 ```
 
-The current project targets Geometry Dash 2.2081 and Geode 5.11.2.
-
-## Recording a macro
-
-1. Enter a level.
-2. Open the pause menu.
-3. Select **START MACRO RECORDING**.
-4. Resume gameplay.
-5. Pause and select **STOP & SAVE MACRO**, or leave the level to autosave.
-6. Find the resulting `.hbmacro` file in the mod's save directory under `macros/`.
-
-The first milestone records input transitions. Playback, external macro parsers, and collision analysis are not implemented yet.
-
-## Important timing note
-
-The recorder stores both a PlayLayer update-frame index and a monotonic microsecond timestamp. These are different clocks and must not be treated as interchangeable. The initial frame counter is an update-step counter, not a claim that every device is running at a fixed refresh rate.
+The project currently targets Geometry Dash 2.2081 and Geode 5.11.2.
