@@ -101,11 +101,10 @@ class $modify(HBPauseLayer, PauseLayer) {
                 )->show();
             }
             else {
-                FLAlertLayer::create(
-                    "Macro Engine",
-                    "Macro saved successfully! " + std::to_string(engine.getInputCount()) + " inputs recorded.",
-                    "Great"
-                )->show();
+                const auto message = std::string("Macro saved successfully! ")
+                    + std::to_string(engine.getInputCount())
+                    + " inputs recorded.";
+                FLAlertLayer::create("Macro Engine", message.c_str(), "Great")->show();
                 log::info("[Macro Engine] Saved file: {}", path);
             }
             return;
