@@ -9,19 +9,25 @@ using namespace geode::prelude;
 using hitborderless::MacroEngine;
 
 // Capture gameplay button transitions. The base layer is also used by the
-// editor, so only events belonging to the active PlayLayer are recorded.
+// editor, so only events belonging to the active, non-replay PlayLayer are recorded.
 class $modify(HBBaseGameLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
-        if (PlayLayer::get() == this) {
-            MacroEngine::get().recordInput(down, button, isPlayer1);
+        auto* playLayer = PlayLayer::get();
+        if (playLayer == this && !playLayer->m_useReplay) {
+            MacroEngine::get().recordInput(
+                down,
+                button,
+                isPlayer1,
+                playLayer->m_gameState.m_commandIndex
+            );
         }
 
         GJBaseGameLayer::handleButton(down, button, isPlayer1);
     }
 };
 
-// Count actual PlayLayer update steps. This is deliberately separate from
-// wall-clock timestamps: refresh rate and elapsed time are not interchangeable.
+// Count PlayLayer update steps separately from the game's simulation command
+// index and from wall-clock timestamps.
 class $modify(HBPlayLayer, PlayLayer) {
     void postUpdate(float dt) {
         MacroEngine::get().onFrame(dt);
@@ -49,8 +55,7 @@ class $modify(HBPlayLayer, PlayLayer) {
     }
 };
 
-// A small recorder control is added to the pause layer so the user can start
-// recording and immediately resume gameplay, or stop and save the current take.
+// Pause-menu control: start recording and resume, or stop and save the take.
 class $modify(HBPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
@@ -98,19 +103,16 @@ class $modify(HBPauseLayer, PauseLayer) {
             else {
                 FLAlertLayer::create(
                     "Macro Engine",
-                    fmt::format(
-                        "Macro saved successfully!\n{} inputs recorded.\n\n{}",
-                        engine.getInputCount(),
-                        path
-                    ),
+                    "Macro saved successfully! " + std::to_string(engine.getInputCount()) + " inputs recorded.",
                     "Great"
                 )->show();
+                log::info("[Macro Engine] Saved file: {}", path);
             }
             return;
         }
 
         if (engine.startRecording()) {
-            log::info("[Macro Engine] Recording armed from pause menu");
+            log::info("[Macro Engine] Recording started from pause menu");
             this->onResume(nullptr);
         }
     }
