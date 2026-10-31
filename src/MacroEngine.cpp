@@ -348,7 +348,8 @@ bool MacroEngine::startPlayback() {
     }
     m_playbackIndex = 0;
     m_heldButtons.clear();
-    m_playbackStartedAt = std::chrono::steady_clock::now();
+    m_playbackClockStarted = false;
+    m_playbackStartedAt = {};
     m_playing = true;
     log::info("[Macro Engine] Playback started ({} events)", m_loadedEvents.size());
     return true;
@@ -357,6 +358,11 @@ bool MacroEngine::startPlayback() {
 void MacroEngine::updatePlayback(const std::function<void(bool, int, bool)>& dispatch) {
     if (!m_playing || !dispatch) {
         return;
+    }
+
+    if (!m_playbackClockStarted) {
+        m_playbackStartedAt = std::chrono::steady_clock::now();
+        m_playbackClockStarted = true;
     }
 
     const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -390,6 +396,7 @@ void MacroEngine::stopPlayback(const std::function<void(bool, int, bool)>& dispa
     const auto held = m_heldButtons;
     m_heldButtons.clear();
     m_playing = false;
+    m_playbackClockStarted = false;
     for (const auto& [button, player1] : held) {
         if (dispatch) {
             dispatch(false, button, player1);
@@ -421,7 +428,7 @@ std::int64_t MacroEngine::getElapsedMicroseconds() const {
     if (m_recording) {
         return elapsedMicroseconds();
     }
-    if (m_playing) {
+    if (m_playing && m_playbackClockStarted) {
         return std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - m_playbackStartedAt
         ).count();
