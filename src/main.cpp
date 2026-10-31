@@ -42,6 +42,9 @@ class $modify(MEPlayLayer, PlayLayer) {
         PlayLayer::postUpdate(dt);
 
         auto& engine = MacroEngine::get();
+        if (this->m_useReplay && engine.isPlaying()) {
+            engine.stopPlayback();
+        }
         if (engine.isPlaying() && !this->m_useReplay) {
             engine.updatePlayback([this](bool down, int button, bool player1) {
                 this->handleButton(down, button, player1);
@@ -60,17 +63,23 @@ class $modify(MEPlayLayer, PlayLayer) {
             return;
         }
 
-        if (!m_fields->hitBorderlessDraw) {
-            auto* draw = CCDrawNode::create();
-            if (draw) {
-                draw->setID("macro-engine-hit-borderless-overlay");
-                draw->setZOrder(10000);
-                this->addChild(draw);
-                m_fields->hitBorderlessDraw = draw;
+        if (engine.isRecording()) {
+            if (!m_fields->hitBorderlessDraw) {
+                auto* draw = CCDrawNode::create();
+                if (draw) {
+                    draw->setID("macro-engine-hit-borderless-overlay");
+                    draw->setZOrder(10000);
+                    this->addChild(draw);
+                    m_fields->hitBorderlessDraw = draw;
+                }
+            }
+            if (m_fields->hitBorderlessDraw) {
+                m_fields->hitBorderlessDraw->setVisible(true);
             }
         }
-        if (m_fields->hitBorderlessDraw) {
-            m_fields->hitBorderlessDraw->setVisible(true);
+        else if (m_fields->hitBorderlessDraw) {
+            m_fields->hitBorderlessDraw->clear();
+            m_fields->hitBorderlessDraw->setVisible(false);
         }
 
         if (engine.isRecording()) {
@@ -101,62 +110,65 @@ class $modify(MEPlayLayer, PlayLayer) {
             m_fields->frameCounterLabel->setVisible(true);
         }
 
-        const auto frame = this->m_gameState.m_commandIndex;
-
-        if (this->m_player1) {
-            const auto position = this->m_player1->getPosition();
-            engine.recordPlayerPosition(position.x, position.y, true, frame);
-        }
-        if (this->m_player2) {
-            const auto position = this->m_player2->getPosition();
-            engine.recordPlayerPosition(position.x, position.y, false, frame);
-        }
-
-        // Draw a short, live trail to keep the overlay inexpensive on mobile.
-        if (auto* draw = m_fields->hitBorderlessDraw) {
-            draw->clear();
-            const auto& samples = engine.getTrajectory();
-            constexpr std::size_t maxTrailSamples = 1800;
-            const auto first = samples.size() > maxTrailSamples
-                ? samples.size() - maxTrailSamples
-                : 0;
-
-            const macroengine::MacroPositionSample* previousP1 = nullptr;
-            const macroengine::MacroPositionSample* previousP2 = nullptr;
-            for (std::size_t i = first; i < samples.size(); ++i) {
-                const auto& sample = samples[i];
-                auto*& previous = sample.player1 ? previousP1 : previousP2;
-                if (previous) {
-                    const ccColor4F trailColor = sample.player1
-                        ? ccColor4F{1.f, 0.82f, 0.12f, 0.92f}
-                        : ccColor4F{1.f, 0.94f, 0.45f, 0.92f};
-                    draw->drawSegment(
-                        {previous->x, previous->y},
-                        {sample.x, sample.y},
-                        0.8f,
-                        trailColor
+        if (engine.isRecording()) {
+            const auto frame = this->m_gameState.m_commandIndex;
+    
+            if (this->m_player1) {
+                const auto position = this->m_player1->getPosition();
+                engine.recordPlayerPosition(position.x, position.y, true, frame);
+            }
+            if (this->m_player2) {
+                const auto position = this->m_player2->getPosition();
+                engine.recordPlayerPosition(position.x, position.y, false, frame);
+            }
+    
+            // Draw a short, live trail to keep the overlay inexpensive on mobile.
+            if (auto* draw = m_fields->hitBorderlessDraw) {
+                draw->clear();
+                const auto& samples = engine.getTrajectory();
+                constexpr std::size_t maxTrailSamples = 1800;
+                const auto first = samples.size() > maxTrailSamples
+                    ? samples.size() - maxTrailSamples
+                    : 0;
+    
+                const macroengine::MacroPositionSample* previousP1 = nullptr;
+                const macroengine::MacroPositionSample* previousP2 = nullptr;
+                for (std::size_t i = first; i < samples.size(); ++i) {
+                    const auto& sample = samples[i];
+                    auto*& previous = sample.player1 ? previousP1 : previousP2;
+                    if (previous) {
+                        const ccColor4F trailColor = sample.player1
+                            ? ccColor4F{1.f, 0.82f, 0.12f, 0.92f}
+                            : ccColor4F{1.f, 0.94f, 0.45f, 0.92f};
+                        draw->drawSegment(
+                            {previous->x, previous->y},
+                            {sample.x, sample.y},
+                            0.8f,
+                            trailColor
+                        );
+                    }
+                    previous = &sample;
+                }
+    
+                // Input markers are placed at the player's sampled position.
+                const auto& inputs = engine.getInputEvents();
+                const auto markerFirst = inputs.size() > 160
+                    ? inputs.size() - 160
+                    : 0;
+                for (std::size_t i = markerFirst; i < inputs.size(); ++i) {
+                    const auto& event = inputs[i];
+                    const ccColor4F markerColor = event.down
+                        ? ccColor4F{0.55f, 0.36f, 0.02f, 1.f}
+                        : ccColor4F{1.f, 1.f, 1.f, 1.f};
+                    draw->drawDot(
+                        {event.x, event.y},
+                        event.down ? 2.6f : 2.1f,
+                        markerColor
                     );
                 }
-                previous = &sample;
-            }
-
-            // Input markers are placed at the player's sampled position.
-            const auto& inputs = engine.getInputEvents();
-            const auto markerFirst = inputs.size() > 160
-                ? inputs.size() - 160
-                : 0;
-            for (std::size_t i = markerFirst; i < inputs.size(); ++i) {
-                const auto& event = inputs[i];
-                const ccColor4F markerColor = event.down
-                    ? ccColor4F{0.55f, 0.36f, 0.02f, 1.f}
-                    : ccColor4F{1.f, 1.f, 1.f, 1.f};
-                draw->drawDot(
-                    {event.x, event.y},
-                    event.down ? 2.6f : 2.1f,
-                    markerColor
-                );
             }
         }
+
     }
 
     void onQuit() {
