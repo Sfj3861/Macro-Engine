@@ -37,6 +37,8 @@ bool MacroEngine::startRecording() {
     m_events.clear();
     m_positions.clear();
     m_updateSteps = 0;
+    m_previousInputTimestampUs = -1;
+    m_lastInputIntervalUs = -1;
     m_startedAt = std::chrono::steady_clock::now();
     m_recording = true;
 
@@ -49,9 +51,15 @@ void MacroEngine::recordInput(bool down, int button, bool player1, std::uint64_t
         return;
     }
 
+    const auto timestampUs = elapsedMicroseconds();
+    if (m_previousInputTimestampUs >= 0) {
+        m_lastInputIntervalUs = timestampUs - m_previousInputTimestampUs;
+    }
+    m_previousInputTimestampUs = timestampUs;
+
     m_events.push_back(MacroInputEvent{
         .frame = gameFrame,
-        .timestampUs = elapsedMicroseconds(),
+        .timestampUs = timestampUs,
         .button = button,
         .down = down,
         .player1 = player1,
@@ -348,6 +356,8 @@ bool MacroEngine::startPlayback() {
     }
     m_playbackIndex = 0;
     m_heldButtons.clear();
+    m_previousInputTimestampUs = -1;
+    m_lastInputIntervalUs = -1;
     m_playbackClockStarted = false;
     m_playbackStartedAt = {};
     m_playing = true;
@@ -372,6 +382,10 @@ void MacroEngine::updatePlayback(const std::function<void(bool, int, bool)>& dis
     while (m_playbackIndex < m_loadedEvents.size()
         && m_loadedEvents[m_playbackIndex].timestampUs <= elapsed) {
         const auto& event = m_loadedEvents[m_playbackIndex++];
+        if (m_previousInputTimestampUs >= 0) {
+            m_lastInputIntervalUs = event.timestampUs - m_previousInputTimestampUs;
+        }
+        m_previousInputTimestampUs = event.timestampUs;
         dispatch(event.down, event.button, event.player1);
 
         const auto key = std::make_pair(event.button, event.player1);
@@ -434,6 +448,10 @@ std::int64_t MacroEngine::getElapsedMicroseconds() const {
         ).count();
     }
     return 0;
+}
+
+std::int64_t MacroEngine::getLastInputIntervalMicroseconds() const {
+    return m_lastInputIntervalUs;
 }
 
 std::uint64_t MacroEngine::getCurrentNormalizedFrame() const {
