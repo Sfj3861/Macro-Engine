@@ -13,6 +13,8 @@ struct MacroInputEvent {
     int button = 0;
     bool down = false;
     bool player1 = true;
+    float x = 0.f;
+    float y = 0.f;
 };
 
 struct MacroPositionSample {
@@ -29,7 +31,7 @@ public:
 
     bool startRecording();
     std::string stopAndSave();
-    void recordInput(bool down, int button, bool player1, std::uint64_t gameFrame);
+    void recordInput(bool down, int button, bool player1, std::uint64_t gameFrame, float x, float y);
     void recordPlayerPosition(float x, float y, bool player1, std::uint64_t gameFrame);
     void onFrame(float dt);
 
@@ -37,6 +39,8 @@ public:
     std::uint64_t getUpdateSteps() const;
     std::size_t getInputCount() const;
     std::size_t getTrajectorySampleCount() const;
+    const std::vector<MacroInputEvent>& getInputEvents() const;
+    const std::vector<MacroPositionSample>& getTrajectory() const;
 
 private:
     MacroEngine() = default;
