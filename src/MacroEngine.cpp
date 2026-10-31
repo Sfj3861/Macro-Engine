@@ -180,4 +180,8 @@ std::size_t MacroEngine::getInputCount() const {
     return m_events.size();
 }
 
+std::size_t MacroEngine::getTrajectorySampleCount() const {
+    return m_positions.size();
+}
+
 } // namespace macroengine
