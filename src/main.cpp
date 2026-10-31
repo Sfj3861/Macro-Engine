@@ -114,7 +114,9 @@ class $modify(MEPauseLayer, PauseLayer) {
             else {
                 const auto message = std::string("Macro saved successfully! ")
                     + std::to_string(engine.getInputCount())
-                    + " inputs and trajectory samples recorded.";
+                    + " inputs and "
+                    + std::to_string(engine.getTrajectorySampleCount())
+                    + " trajectory samples recorded.";
                 FLAlertLayer::create("Macro Engine", message.c_str(), "Great")->show();
                 log::info("[Macro Engine] Saved file: {}", path);
             }
