@@ -39,6 +39,11 @@ class $modify(MEPlayLayer, PlayLayer) {
 
         auto& engine = MacroEngine::get();
         if (!engine.isRecording() || this->m_useReplay) {
+            // Do not leave a stale trajectory on screen after recording stops.
+            if (m_fields->hitBorderlessDraw) {
+                m_fields->hitBorderlessDraw->clear();
+                m_fields->hitBorderlessDraw->setVisible(false);
+            }
             return;
         }
 
@@ -50,6 +55,9 @@ class $modify(MEPlayLayer, PlayLayer) {
                 this->addChild(draw);
                 m_fields->hitBorderlessDraw = draw;
             }
+        }
+        if (m_fields->hitBorderlessDraw) {
+            m_fields->hitBorderlessDraw->setVisible(true);
         }
 
         engine.onFrame(dt);
