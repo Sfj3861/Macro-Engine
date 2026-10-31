@@ -89,6 +89,9 @@ std::string MacroEngine::stopAndSave() {
 
         const auto now = std::chrono::system_clock::now();
         const auto time = std::chrono::system_clock::to_time_t(now);
+        const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()
+        ).count() % 1000;
         std::tm localTime{};
 #if defined(_WIN32)
         localtime_s(&localTime, &time);
@@ -97,7 +100,9 @@ std::string MacroEngine::stopAndSave() {
 #endif
 
         std::ostringstream filename;
-        filename << "macro_" << std::put_time(&localTime, "%Y%m%d_%H%M%S") << ".macroengine";
+        filename << "macro_" << std::put_time(&localTime, "%Y%m%d_%H%M%S")
+                 << "_" << std::setw(3) << std::setfill('0') << milliseconds
+                 << ".macroengine";
         const auto outputPath = macroDir / filename.str();
 
         std::ofstream output(outputPath, std::ios::binary);
