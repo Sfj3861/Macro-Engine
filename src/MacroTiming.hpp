@@ -22,4 +22,8 @@ constexpr double milliseconds(std::int64_t timestampUs) {
     return timestampUs <= 0 ? 0.0 : static_cast<double>(timestampUs) / 1000.0;
 }
 
+static_assert(normalizedFrame(0) == 0);
+static_assert(normalizedFrame(500'000) == 120);
+static_assert(normalizedFrame(1'000'000) == 240);
+
 } // namespace macroengine::timing
