@@ -21,18 +21,18 @@ public:
 
     bool startRecording();
     std::string stopAndSave();
-    void recordInput(bool down, int button, bool player1);
+    void recordInput(bool down, int button, bool player1, std::uint64_t gameFrame);
     void onFrame(float dt);
 
     bool isRecording() const;
-    std::uint64_t getCurrentFrame() const;
+    std::uint64_t getUpdateSteps() const;
     std::size_t getInputCount() const;
 
 private:
     MacroEngine() = default;
 
     bool m_recording = false;
-    std::uint64_t m_frame = 0;
+    std::uint64_t m_updateSteps = 0;
     std::chrono::steady_clock::time_point m_startedAt{};
     std::vector<MacroInputEvent> m_events;
 };
