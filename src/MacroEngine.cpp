@@ -1,4 +1,5 @@
 #include "MacroEngine.hpp"
+#include "MacroTiming.hpp"
 
 #include <Geode/Geode.hpp>
 
