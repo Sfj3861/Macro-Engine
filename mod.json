@@ -11,10 +11,12 @@
   "version": "v0.1.0",
   "developer": "Sfj3861",
   "description": "A macro recording and gameplay analysis toolkit for Geometry Dash.",
-  "repository": "https://github.com/Sfj3861/Macro-Engine",
   "tags": [
     "gameplay",
     "utility",
     "interface"
-  ]
+  ],
+  "links": {
+    "source": "https://github.com/Sfj3861/Macro-Engine"
+  }
 }
