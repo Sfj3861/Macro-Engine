@@ -36,6 +36,7 @@ public:
     bool isRecording() const;
     std::uint64_t getUpdateSteps() const;
     std::size_t getInputCount() const;
+    std::size_t getTrajectorySampleCount() const;
 
 private:
     MacroEngine() = default;
