@@ -23,7 +23,7 @@ bool MacroEngine::startRecording() {
     }
 
     m_events.clear();
-    m_frame = 0;
+    m_updateSteps = 0;
     m_startedAt = std::chrono::steady_clock::now();
     m_recording = true;
 
@@ -31,7 +31,7 @@ bool MacroEngine::startRecording() {
     return true;
 }
 
-void MacroEngine::recordInput(bool down, int button, bool player1) {
+void MacroEngine::recordInput(bool down, int button, bool player1, std::uint64_t gameFrame) {
     if (!m_recording) {
         return;
     }
@@ -42,7 +42,7 @@ void MacroEngine::recordInput(bool down, int button, bool player1) {
     ).count();
 
     m_events.push_back(MacroInputEvent{
-        .frame = m_frame,
+        .frame = gameFrame,
         .timestampUs = elapsed,
         .button = button,
         .down = down,
@@ -52,7 +52,7 @@ void MacroEngine::recordInput(bool down, int button, bool player1) {
 
 void MacroEngine::onFrame(float) {
     if (m_recording) {
-        ++m_frame;
+        ++m_updateSteps;
     }
 }
 
@@ -96,8 +96,8 @@ std::string MacroEngine::stopAndSave() {
                << "  \"format\": \"hit-borderless-macro\",\n"
                << "  \"schema_version\": 1,\n"
                << "  \"timebase\": \"steady_clock_microseconds\",\n"
-               << "  \"frame_source\": \"PlayLayer::postUpdate\",\n"
-               << "  \"frame_count\": " << m_frame << ",\n"
+               << "  \"frame_source\": \"GJGameState::m_commandIndex\",\n"
+               << "  \"update_steps\": " << m_updateSteps << ",\n"
                << "  \"duration_us\": " << durationUs << ",\n"
                << "  \"input_count\": " << m_events.size() << ",\n"
                << "  \"inputs\": [";
@@ -134,8 +134,8 @@ bool MacroEngine::isRecording() const {
     return m_recording;
 }
 
-std::uint64_t MacroEngine::getCurrentFrame() const {
-    return m_frame;
+std::uint64_t MacroEngine::getUpdateSteps() const {
+    return m_updateSteps;
 }
 
 std::size_t MacroEngine::getInputCount() const {
