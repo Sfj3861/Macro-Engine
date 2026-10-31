@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <functional>
+#include <utility>
 
 namespace macroengine {
 
@@ -31,11 +33,19 @@ public:
 
     bool startRecording();
     std::string stopAndSave();
+    bool loadMacro(const std::string& path, std::string& error);
+    bool loadLatestMacro(std::string& path, std::string& error);
+    bool startPlayback();
+    void updatePlayback(const std::function<void(bool, int, bool)>& dispatch);
+    void stopPlayback(const std::function<void(bool, int, bool)>& dispatch = {});
     void recordInput(bool down, int button, bool player1, std::uint64_t gameFrame, float x, float y);
     void recordPlayerPosition(float x, float y, bool player1, std::uint64_t gameFrame);
     void onFrame(float dt);
 
     bool isRecording() const;
+    bool isPlaying() const;
+    bool hasLoadedMacro() const;
+    std::size_t getLoadedInputCount() const;
     std::uint64_t getUpdateSteps() const;
     std::int64_t getElapsedMicroseconds() const;
     std::uint64_t getCurrentNormalizedFrame() const;
@@ -52,6 +62,11 @@ private:
     bool m_recording = false;
     std::uint64_t m_updateSteps = 0;
     std::chrono::steady_clock::time_point m_startedAt{};
+    bool m_playing = false;
+    std::chrono::steady_clock::time_point m_playbackStartedAt{};
+    std::vector<MacroInputEvent> m_loadedEvents;
+    std::size_t m_playbackIndex = 0;
+    std::vector<std::pair<int, bool>> m_heldButtons;
     std::vector<MacroInputEvent> m_events;
     std::vector<MacroPositionSample> m_positions;
 };
