@@ -13,7 +13,7 @@ using hitborderless::MacroEngine;
 class $modify(HBBaseGameLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
         auto* playLayer = PlayLayer::get();
-        if (playLayer == this && !playLayer->m_useReplay) {
+        if (playLayer && static_cast<GJBaseGameLayer*>(playLayer) == static_cast<GJBaseGameLayer*>(this) && !playLayer->m_useReplay) {
             MacroEngine::get().recordInput(
                 down,
                 button,
