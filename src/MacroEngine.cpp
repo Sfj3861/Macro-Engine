@@ -30,7 +30,7 @@ std::int64_t MacroEngine::elapsedMicroseconds() const {
 }
 
 bool MacroEngine::startRecording() {
-    if (m_recording) {
+    if (m_recording || m_playing) {
         return false;
     }
 
@@ -110,8 +110,9 @@ std::string MacroEngine::stopAndSave() {
                  << "_" << std::setw(3) << std::setfill('0') << milliseconds
                  << ".macroengine";
         const auto outputPath = macroDir / filename.str();
+        const auto temporaryPath = std::filesystem::path(outputPath.string() + ".tmp");
 
-        std::ofstream output(outputPath, std::ios::binary);
+        std::ofstream output(temporaryPath, std::ios::binary);
         if (!output.is_open()) {
             log::error("[Macro Engine] Could not open macro output file");
             return {};
@@ -171,6 +172,17 @@ std::string MacroEngine::stopAndSave() {
 
         if (!output) {
             log::error("[Macro Engine] Failed while writing macro file");
+            std::error_code cleanupError;
+            std::filesystem::remove(temporaryPath, cleanupError);
+            return {};
+        }
+
+        std::error_code renameError;
+        std::filesystem::rename(temporaryPath, outputPath, renameError);
+        if (renameError) {
+            log::error("[Macro Engine] Could not finalize macro file: {}", renameError.message());
+            std::error_code cleanupError;
+            std::filesystem::remove(temporaryPath, cleanupError);
             return {};
         }
 
