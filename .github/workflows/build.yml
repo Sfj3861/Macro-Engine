@@ -1,0 +1,41 @@
+name: Build Hit Borderless
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            target: Win64
+          - name: Android 64-bit
+            os: ubuntu-latest
+            target: Android64
+
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Geode mod
+        id: build
+        uses: geode-sdk/build-geode-mod@main
+        with:
+          sdk: given
+          target: ${{ matrix.target }}
+
+      - name: Upload .geode artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hit-borderless-${{ matrix.target }}
+          path: ${{ steps.build.outputs.build-output }}/*.geode
+          if-no-files-found: error
