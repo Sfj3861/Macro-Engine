@@ -103,7 +103,8 @@ class $modify(MEPlayLayer, PlayLayer) {
             const auto elapsedUs = engine.getElapsedMicroseconds();
             std::ostringstream counter;
             counter << (engine.isPlaying() ? "PLAY " : "REC ")
-                    << "FE " << engine.getCurrentNormalizedFrame()
+                    << "GF " << this->m_gameState.m_commandIndex
+                    << " | FE " << engine.getCurrentNormalizedFrame()
                     << " | " << std::fixed << std::setprecision(2)
                     << (static_cast<double>(elapsedUs) / 1000.0) << " ms";
             const auto inputIntervalUs = engine.getLastInputIntervalMicroseconds();
