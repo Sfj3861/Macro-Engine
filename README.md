@@ -14,7 +14,7 @@ A Geode toolkit for Geometry Dash focused on reliable input macros, playback, an
 
 ## Hit Borderless visual language
 
-The planned overlay uses:
+The planned full overlay uses:
 - A thin yellow line for the player's sampled trajectory.
 - Dark-yellow circles for press events and white circles for release events.
 - Red lines for lethal collision boundaries.
@@ -32,9 +32,10 @@ The initial recorder scaffold is present:
 - Game command-frame index and monotonic microsecond timestamps.
 - PlayLayer update-step count.
 - Per-update P1/P2 position samples with timestamps and command-frame references.
-- JSON-based `.macroengine` file output containing input events and sampled trajectories.
+- Live Hit Borderless prototype: thin yellow P1/P2 trajectory strokes and dark-yellow press / white release markers.
+- JSON-based `.macroengine` file output containing input events (including their positions) and sampled trajectories.
 
-This is an early recording scaffold, not yet a complete macro system. Playback, robust file validation, imported formats, trajectory rendering and collision analysis are not implemented.
+This is an early recording scaffold, not yet a complete macro system. Playback, robust file validation, imported formats, world-object collision-line rendering, and physics-based survivability analysis are not implemented. The current live trajectory overlay is an early prototype and still needs in-game visual and performance testing.
 
 ## Development order
 
