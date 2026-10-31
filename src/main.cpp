@@ -4,6 +4,9 @@
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/cocos/draw_nodes/CCDrawNode.h>
 
+#include <iomanip>
+#include <sstream>
+
 #include "MacroEngine.hpp"
 
 using namespace geode::prelude;
@@ -12,7 +15,7 @@ using macroengine::MacroEngine;
 class $modify(MEBaseGameLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
         auto* playLayer = PlayLayer::get();
-        if (playLayer && static_cast<GJBaseGameLayer*>(playLayer) == static_cast<GJBaseGameLayer*>(this) && !playLayer->m_useReplay) {
+        if (playLayer && static_cast<GJBaseGameLayer*>(playLayer) == static_cast<GJBaseGameLayer*>(this) && !playLayer->m_useReplay && !MacroEngine::get().isPlaying()) {
             auto* player = isPlayer1 ? playLayer->m_player1 : playLayer->m_player2;
             const auto position = player ? player->getPosition() : CCPointZero;
             MacroEngine::get().recordInput(
@@ -32,17 +35,27 @@ class $modify(MEBaseGameLayer, GJBaseGameLayer) {
 class $modify(MEPlayLayer, PlayLayer) {
     struct Fields {
         CCDrawNode* hitBorderlessDraw = nullptr;
+        CCLabelBMFont* frameCounterLabel = nullptr;
     };
 
     void postUpdate(float dt) {
         PlayLayer::postUpdate(dt);
 
         auto& engine = MacroEngine::get();
-        if (!engine.isRecording() || this->m_useReplay) {
+        if (engine.isPlaying() && !this->m_useReplay) {
+            engine.updatePlayback([this](bool down, int button, bool player1) {
+                this->handleButton(down, button, player1);
+            });
+        }
+
+        if ((!engine.isRecording() && !engine.isPlaying()) || this->m_useReplay) {
             // Do not leave a stale trajectory on screen after recording stops.
             if (m_fields->hitBorderlessDraw) {
                 m_fields->hitBorderlessDraw->clear();
                 m_fields->hitBorderlessDraw->setVisible(false);
+            }
+            if (m_fields->frameCounterLabel) {
+                m_fields->frameCounterLabel->setVisible(false);
             }
             return;
         }
@@ -60,7 +73,34 @@ class $modify(MEPlayLayer, PlayLayer) {
             m_fields->hitBorderlessDraw->setVisible(true);
         }
 
-        engine.onFrame(dt);
+        if (engine.isRecording()) {
+            engine.onFrame(dt);
+        }
+
+        if (!m_fields->frameCounterLabel) {
+            auto* label = CCLabelBMFont::create("FE 0 | 0.00 ms", "bigFont.fnt");
+            if (label) {
+                label->setID("macro-engine-frame-counter");
+                label->setAnchorPoint({0.f, 0.5f});
+                label->setScale(0.24f);
+                const auto size = CCDirector::sharedDirector()->getWinSize();
+                label->setPosition({10.f, size.height - 18.f});
+                label->setZOrder(10001);
+                this->addChild(label);
+                m_fields->frameCounterLabel = label;
+            }
+        }
+        if (m_fields->frameCounterLabel) {
+            const auto elapsedUs = engine.getElapsedMicroseconds();
+            std::ostringstream counter;
+            counter << (engine.isPlaying() ? "PLAY " : "REC ")
+                    << "FE " << engine.getCurrentNormalizedFrame()
+                    << " | " << std::fixed << std::setprecision(2)
+                    << (static_cast<double>(elapsedUs) / 1000.0) << " ms";
+            m_fields->frameCounterLabel->setString(counter.str().c_str());
+            m_fields->frameCounterLabel->setVisible(true);
+        }
+
         const auto frame = this->m_gameState.m_commandIndex;
 
         if (this->m_player1) {
@@ -120,6 +160,9 @@ class $modify(MEPlayLayer, PlayLayer) {
     }
 
     void onQuit() {
+        if (MacroEngine::get().isPlaying()) {
+            MacroEngine::get().stopPlayback();
+        }
         if (MacroEngine::get().isRecording()) {
             auto path = MacroEngine::get().stopAndSave();
             if (!path.empty()) {
@@ -130,6 +173,9 @@ class $modify(MEPlayLayer, PlayLayer) {
     }
 
     void onExit() {
+        if (MacroEngine::get().isPlaying()) {
+            MacroEngine::get().stopPlayback();
+        }
         if (MacroEngine::get().isRecording()) {
             auto path = MacroEngine::get().stopAndSave();
             if (!path.empty()) {
@@ -169,7 +215,43 @@ class $modify(MEPauseLayer, PauseLayer) {
         });
 
         menu->addChild(button);
+
+        auto playLabel = CCLabelBMFont::create("PLAY LATEST MACRO", "bigFont.fnt");
+        if (playLabel) {
+            auto playButton = CCMenuItemSpriteExtra::create(
+                playLabel,
+                this,
+                menu_selector(MEPauseLayer::onMacroEnginePlayLatest)
+            );
+            playButton->setScale(0.34f);
+            playButton->setPosition({
+                winSize.width - 105.f,
+                winSize.height - 76.f
+            });
+            menu->addChild(playButton);
+        }
+
         this->addChild(menu, 1000);
+    }
+
+    void onMacroEnginePlayLatest(CCObject*) {
+        auto& engine = MacroEngine::get();
+        std::string path;
+        std::string error;
+        if (!engine.loadLatestMacro(path, error)) {
+            FLAlertLayer::create("Macro Engine", error.c_str(), "OK")->show();
+            return;
+        }
+        if (!engine.startPlayback()) {
+            FLAlertLayer::create(
+                "Macro Engine",
+                "The macro could not be started. Make sure no recording or playback is active and the macro contains inputs.",
+                "OK"
+            )->show();
+            return;
+        }
+        log::info("[Macro Engine] Playing macro: {}", path);
+        this->onResume(nullptr);
     }
 
     void onMacroEngineToggle(CCObject*) {
