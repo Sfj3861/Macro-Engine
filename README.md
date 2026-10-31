@@ -31,7 +31,8 @@ The initial recorder scaffold is present:
 - P1/P2 identity.
 - Game command-frame index and monotonic microsecond timestamps.
 - PlayLayer update-step count.
-- JSON-based macro file output.
+- Per-update P1/P2 position samples with timestamps and command-frame references.
+- JSON-based `.macroengine` file output containing input events and sampled trajectories.
 
 This is an early recording scaffold, not yet a complete macro system. Playback, robust file validation, imported formats, trajectory rendering and collision analysis are not implemented.
 
