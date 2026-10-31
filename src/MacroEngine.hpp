@@ -37,6 +37,8 @@ public:
 
     bool isRecording() const;
     std::uint64_t getUpdateSteps() const;
+    std::int64_t getElapsedMicroseconds() const;
+    std::uint64_t getCurrentNormalizedFrame() const;
     std::size_t getInputCount() const;
     std::size_t getTrajectorySampleCount() const;
     const std::vector<MacroInputEvent>& getInputEvents() const;
