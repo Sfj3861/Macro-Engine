@@ -1,6 +1,8 @@
 #include "MacroEngine.hpp"
 #include "MacroTiming.hpp"
 
+#include <matjson.hpp>
+
 #include <Geode/Geode.hpp>
 
 #include <filesystem>
@@ -8,6 +10,9 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 using namespace geode::prelude;
 
@@ -182,8 +187,218 @@ std::string MacroEngine::stopAndSave() {
     }
 }
 
+
+bool MacroEngine::loadMacro(const std::string& path, std::string& error) {
+    error.clear();
+    try {
+        const std::filesystem::path macroPath(path);
+        std::error_code ec;
+        const auto fileSize = std::filesystem::file_size(macroPath, ec);
+        if (ec || fileSize == 0 || fileSize > 64ull * 1024ull * 1024ull) {
+            error = "The macro file is missing, empty, or larger than 64 MB.";
+            return false;
+        }
+
+        std::ifstream input(macroPath, std::ios::binary);
+        if (!input.is_open()) {
+            error = "Could not open the selected macro file.";
+            return false;
+        }
+
+        auto parsed = matjson::parse(input);
+        if (!parsed) {
+            error = "Invalid macro JSON: " + std::string(parsed.unwrapErr());
+            return false;
+        }
+
+        const auto& root = parsed.unwrap();
+        if (!root.isObject()) {
+            error = "The macro root must be a JSON object.";
+            return false;
+        }
+
+        const auto format = root["format"].asString();
+        const auto version = root["schema_version"].asInt();
+        if (!format || format.unwrap() != "macro-engine" || !version || version.unwrap() != 2) {
+            error = "Unsupported macro format or schema version. Expected Macro Engine schema 2.";
+            return false;
+        }
+
+        const auto& inputs = root["inputs"];
+        if (!inputs.isArray() || inputs.size() > 1'000'000) {
+            error = "The macro input list is missing or exceeds the safety limit.";
+            return false;
+        }
+
+        std::vector<MacroInputEvent> loaded;
+        loaded.reserve(inputs.size());
+        std::int64_t previousTimestamp = -1;
+
+        for (const auto& item : inputs) {
+            if (!item.isObject()) {
+                error = "An input event is not a JSON object.";
+                return false;
+            }
+
+            const auto frame = item["frame"].asUInt();
+            const auto timestamp = item["timestamp_us"].asInt();
+            const auto button = item["button"].asInt();
+            const auto action = item["action"].asString();
+            const auto player = item["player"].asString();
+            const auto x = item["x"].asDouble();
+            const auto y = item["y"].asDouble();
+
+            if (!frame || !timestamp || !button || !action || !player || !x || !y) {
+                error = "An input event is missing a required field or has an invalid type.";
+                return false;
+            }
+
+            const auto timestampUs = timestamp.unwrap();
+            const auto buttonValue = button.unwrap();
+            const auto actionValue = action.unwrap();
+            const auto playerValue = player.unwrap();
+            const auto xValue = x.unwrap();
+            const auto yValue = y.unwrap();
+
+            if (timestampUs < 0 || timestampUs < previousTimestamp
+                || buttonValue < std::numeric_limits<int>::min()
+                || buttonValue > std::numeric_limits<int>::max()
+                || (actionValue != "press" && actionValue != "release")
+                || (playerValue != "P1" && playerValue != "P2")
+                || !std::isfinite(xValue) || !std::isfinite(yValue)) {
+                error = "An input event contains invalid values or is out of chronological order.";
+                return false;
+            }
+
+            loaded.push_back(MacroInputEvent{
+                .frame = frame.unwrap(),
+                .timestampUs = timestampUs,
+                .button = static_cast<int>(buttonValue),
+                .down = actionValue == "press",
+                .player1 = playerValue == "P1",
+                .x = static_cast<float>(xValue),
+                .y = static_cast<float>(yValue)
+            });
+            previousTimestamp = timestampUs;
+        }
+
+        m_loadedEvents = std::move(loaded);
+        m_playbackIndex = 0;
+        m_heldButtons.clear();
+        log::info("[Macro Engine] Loaded macro with {} input events from {}", m_loadedEvents.size(), path);
+        return true;
+    }
+    catch (const std::exception& exception) {
+        error = std::string("Could not load macro: ") + exception.what();
+        return false;
+    }
+}
+
+bool MacroEngine::loadLatestMacro(std::string& path, std::string& error) {
+    error.clear();
+    try {
+        const auto macroDir = std::filesystem::path(Mod::get()->getSaveDir().string()) / "macros";
+        if (!std::filesystem::exists(macroDir)) {
+            error = "No macros folder exists yet. Record a macro first.";
+            return false;
+        }
+
+        std::filesystem::path latest;
+        std::filesystem::file_time_type latestTime{};
+        for (const auto& entry : std::filesystem::directory_iterator(macroDir)) {
+            if (!entry.is_regular_file() || entry.path().extension() != ".macroengine") {
+                continue;
+            }
+            const auto writeTime = entry.last_write_time();
+            if (latest.empty() || writeTime > latestTime) {
+                latest = entry.path();
+                latestTime = writeTime;
+            }
+        }
+
+        if (latest.empty()) {
+            error = "No saved .macroengine files were found.";
+            return false;
+        }
+
+        path = latest.string();
+        return loadMacro(path, error);
+    }
+    catch (const std::exception& exception) {
+        error = std::string("Could not search the macro library: ") + exception.what();
+        return false;
+    }
+}
+
+bool MacroEngine::startPlayback() {
+    if (m_recording || m_playing || m_loadedEvents.empty()) {
+        return false;
+    }
+    m_playbackIndex = 0;
+    m_heldButtons.clear();
+    m_playbackStartedAt = std::chrono::steady_clock::now();
+    m_playing = true;
+    log::info("[Macro Engine] Playback started ({} events)", m_loadedEvents.size());
+    return true;
+}
+
+void MacroEngine::updatePlayback(const std::function<void(bool, int, bool)>& dispatch) {
+    if (!m_playing || !dispatch) {
+        return;
+    }
+
+    const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - m_playbackStartedAt
+    ).count();
+
+    while (m_playbackIndex < m_loadedEvents.size()
+        && m_loadedEvents[m_playbackIndex].timestampUs <= elapsed) {
+        const auto& event = m_loadedEvents[m_playbackIndex++];
+        dispatch(event.down, event.button, event.player1);
+
+        const auto key = std::make_pair(event.button, event.player1);
+        const auto held = std::find(m_heldButtons.begin(), m_heldButtons.end(), key);
+        if (event.down) {
+            if (held == m_heldButtons.end()) {
+                m_heldButtons.push_back(key);
+            }
+        }
+        else if (held != m_heldButtons.end()) {
+            m_heldButtons.erase(held);
+        }
+    }
+
+    if (m_playbackIndex >= m_loadedEvents.size()) {
+        stopPlayback(dispatch);
+        log::info("[Macro Engine] Playback completed");
+    }
+}
+
+void MacroEngine::stopPlayback(const std::function<void(bool, int, bool)>& dispatch) {
+    const auto held = m_heldButtons;
+    m_heldButtons.clear();
+    m_playing = false;
+    for (const auto& [button, player1] : held) {
+        if (dispatch) {
+            dispatch(false, button, player1);
+        }
+    }
+}
+
 bool MacroEngine::isRecording() const {
     return m_recording;
+}
+
+bool MacroEngine::isPlaying() const {
+    return m_playing;
+}
+
+bool MacroEngine::hasLoadedMacro() const {
+    return !m_loadedEvents.empty();
+}
+
+std::size_t MacroEngine::getLoadedInputCount() const {
+    return m_loadedEvents.size();
 }
 
 std::uint64_t MacroEngine::getUpdateSteps() const {
@@ -191,7 +406,15 @@ std::uint64_t MacroEngine::getUpdateSteps() const {
 }
 
 std::int64_t MacroEngine::getElapsedMicroseconds() const {
-    return m_recording ? elapsedMicroseconds() : 0;
+    if (m_recording) {
+        return elapsedMicroseconds();
+    }
+    if (m_playing) {
+        return std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - m_playbackStartedAt
+        ).count();
+    }
+    return 0;
 }
 
 std::uint64_t MacroEngine::getCurrentNormalizedFrame() const {
