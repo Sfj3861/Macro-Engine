@@ -22,14 +22,15 @@ A Geode toolkit for Geometry Dash focused on input recording, macro playback, ti
 - Playback begins on the first resumed gameplay update, rather than while the pause menu is still open.
 - The pause menu has a PLAY LATEST MACRO control.
 
-This is an initial playback implementation, not a verified frame-perfect player. Events are dispatched from the gameplay update hook, so actual delivery precision is bounded by the game's update cadence and must be measured in Geometry Dash on each target platform. Seeking, speed control, pause/resume, manual macro selection, compatibility fingerprints and in-game validation remain outstanding.
+This is an initial playback implementation, not a verified frame-perfect player. Events are dispatched from the gameplay update hook, so actual delivery precision is bounded by the game's update cadence and must be measured in Geometry Dash on each target platform. Pause/resume and stopping from the pause menu are implemented. Seeking, speed control, manual macro selection, compatibility fingerprints and in-game validation remain outstanding.
 
 For the first test, record a short macro, return to the same level, pause immediately at the start, and choose PLAY LATEST MACRO. A replay from a different level state, checkpoint, speed or mode is not expected to match.
 
 ### Frame Counter — first in-game display
 - Shows REC or PLAY state.
 - Displays elapsed time in milliseconds.
-- Displays a normalized elapsed frame count using a fixed 240 FPS reference.
+- Displays the game's current command frame (GF) beside a normalized elapsed frame count (FE) using a fixed 240 FPS reference.
+- Displays elapsed milliseconds and the interval between the two most recent input events.
 - The normalized value is derived from the monotonic timestamp, not the monitor refresh rate or the game's command index.
 
 The normalized frame is a time-analysis unit only. It does not mean the game simulation is running at 240 FPS. A full timeline, event-to-event deltas, frame stepping, filters and analysis controls are still planned.
@@ -63,8 +64,8 @@ The current loader intentionally accepts schema 2 only, limits files to 64 MB an
 1. Test recorder, save/load and playback in Geometry Dash on Android and Windows.
 2. Measure playback timing error and improve scheduling where the game API permits.
 3. Add macro library UI with manual selection, rename and delete.
-4. Expand Frame Counter with event deltas, input markers and timeline controls.
-5. Add seeking, pause/resume, speed control and playback compatibility checks.
+4. Expand Frame Counter with input markers, event timeline and analysis controls.
+5. Add seeking, speed control and playback compatibility checks.
 6. Add Practice Mode checkpoint metadata and segment-aware playback.
 7. Add import/export adapters after inspecting real sample files.
 8. Build event editing and analysis.
