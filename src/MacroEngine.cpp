@@ -359,6 +359,8 @@ bool MacroEngine::startPlayback() {
     m_previousInputTimestampUs = -1;
     m_lastInputIntervalUs = -1;
     m_playbackClockStarted = false;
+    m_playbackPaused = false;
+    m_playbackPausedElapsedUs = 0;
     m_playbackStartedAt = {};
     m_playing = true;
     log::info("[Macro Engine] Playback started ({} events)", m_loadedEvents.size());
@@ -366,7 +368,7 @@ bool MacroEngine::startPlayback() {
 }
 
 void MacroEngine::updatePlayback(const std::function<void(bool, int, bool)>& dispatch) {
-    if (!m_playing || !dispatch) {
+    if (!m_playing || m_playbackPaused || !dispatch) {
         return;
     }
 
@@ -406,11 +408,36 @@ void MacroEngine::updatePlayback(const std::function<void(bool, int, bool)>& dis
     }
 }
 
+void MacroEngine::pausePlayback() {
+    if (!m_playing || m_playbackPaused) {
+        return;
+    }
+    if (m_playbackClockStarted) {
+        m_playbackPausedElapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - m_playbackStartedAt
+        ).count();
+    }
+    m_playbackPaused = true;
+}
+
+void MacroEngine::resumePlayback() {
+    if (!m_playing || !m_playbackPaused) {
+        return;
+    }
+    if (m_playbackClockStarted) {
+        m_playbackStartedAt = std::chrono::steady_clock::now()
+            - std::chrono::microseconds(m_playbackPausedElapsedUs);
+    }
+    m_playbackPaused = false;
+}
+
 void MacroEngine::stopPlayback(const std::function<void(bool, int, bool)>& dispatch) {
     const auto held = m_heldButtons;
     m_heldButtons.clear();
     m_playing = false;
     m_playbackClockStarted = false;
+    m_playbackPaused = false;
+    m_playbackPausedElapsedUs = 0;
     for (const auto& [button, player1] : held) {
         if (dispatch) {
             dispatch(false, button, player1);
@@ -441,6 +468,9 @@ std::uint64_t MacroEngine::getUpdateSteps() const {
 std::int64_t MacroEngine::getElapsedMicroseconds() const {
     if (m_recording) {
         return elapsedMicroseconds();
+    }
+    if (m_playing && m_playbackPaused) {
+        return m_playbackPausedElapsedUs;
     }
     if (m_playing && m_playbackClockStarted) {
         return std::chrono::duration_cast<std::chrono::microseconds>(
