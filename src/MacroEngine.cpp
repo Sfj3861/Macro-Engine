@@ -117,7 +117,13 @@ std::string MacroEngine::stopAndSave() {
         filename << "macro_" << std::put_time(&localTime, "%Y%m%d_%H%M%S")
                  << "_" << std::setw(3) << std::setfill('0') << milliseconds
                  << ".macroengine";
-        const auto outputPath = macroDir / filename.str();
+        auto outputPath = macroDir / filename.str();
+        for (std::uint32_t suffix = 1; std::filesystem::exists(outputPath); ++suffix) {
+            std::ostringstream uniqueName;
+            uniqueName << filename.str().substr(0, filename.str().size() - std::string(".macroengine").size())
+                       << "_" << suffix << ".macroengine";
+            outputPath = macroDir / uniqueName.str();
+        }
         const auto temporaryPath = std::filesystem::path(outputPath.string() + ".tmp");
 
         std::ofstream output(temporaryPath, std::ios::binary);
