@@ -106,6 +106,13 @@ class $modify(MEPlayLayer, PlayLayer) {
                     << "FE " << engine.getCurrentNormalizedFrame()
                     << " | " << std::fixed << std::setprecision(2)
                     << (static_cast<double>(elapsedUs) / 1000.0) << " ms";
+            const auto inputIntervalUs = engine.getLastInputIntervalMicroseconds();
+            if (inputIntervalUs >= 0) {
+                counter << " | d " << (static_cast<double>(inputIntervalUs) / 1000.0) << " ms";
+            }
+            else {
+                counter << " | d --";
+            }
             m_fields->frameCounterLabel->setString(counter.str().c_str());
             m_fields->frameCounterLabel->setVisible(true);
         }
