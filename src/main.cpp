@@ -78,18 +78,23 @@ class $modify(MEPlayLayer, PlayLayer) {
                 ? samples.size() - maxTrailSamples
                 : 0;
 
-            for (std::size_t i = first + 1; i < samples.size(); ++i) {
-                const auto& a = samples[i - 1];
-                const auto& b = samples[i];
-                if (a.player1 != b.player1) {
-                    continue;
+            const MacroPositionSample* previousP1 = nullptr;
+            const MacroPositionSample* previousP2 = nullptr;
+            for (std::size_t i = first; i < samples.size(); ++i) {
+                const auto& sample = samples[i];
+                auto*& previous = sample.player1 ? previousP1 : previousP2;
+                if (previous) {
+                    const ccColor4F trailColor = sample.player1
+                        ? ccColor4F{1.f, 0.82f, 0.12f, 0.92f}
+                        : ccColor4F{1.f, 0.94f, 0.45f, 0.92f};
+                    draw->drawSegment(
+                        {previous->x, previous->y},
+                        {sample.x, sample.y},
+                        0.8f,
+                        trailColor
+                    );
                 }
-                const ccColor4F trailColor = a.player1
-                    ? ccColor4F{1.f, 0.82f, 0.12f, 0.92f}
-                    : ccColor4F{1.f, 0.94f, 0.45f, 0.92f};
-                draw->drawSegment(
-                    {a.x, a.y}, {b.x, b.y}, 0.8f, trailColor
-                );
+                previous = &sample;
             }
 
             // Input markers are placed at the player's sampled position.
