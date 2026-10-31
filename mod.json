@@ -16,13 +16,5 @@
     "gameplay",
     "utility",
     "interface"
-  ],
-  "settings": {
-    "recording-autosave": {
-      "type": "bool",
-      "name": "Autosave recordings",
-      "description": "Save a macro when leaving a level while recording.",
-      "default": true
-    }
-  }
+  ]
 }
