@@ -5,9 +5,9 @@ A Geode toolkit for Geometry Dash focused on reliable input macros, playback, an
 ## Project modules
 
 - **Macro Recorder:** captures input transitions, timing and player identity.
-- **Macro Player:** planned deterministic playback with compatibility checks.
+- **Macro Player:** next major system; deterministic playback, seeking and compatibility checks are being designed around the shared event timebase.
 - **Macro Analyzer:** planned event, frame and run analysis.
-- **Frame Counter:** planned display normalized to a 240 FPS reference while retaining original timing.
+- **Frame Counter:** shared 240 FPS normalization core is implemented in the recorder data; the in-game display and analysis controls remain to be built.
 - **Hit Borderless:** planned trajectory and collision-context visualization. It is not merely a hitbox viewer.
 - **Layout Mode:** planned simplified level rendering that preserves gameplay geometry and physics.
 - **Showcase Recorder:** planned tools for recording and presenting runs.
@@ -42,7 +42,7 @@ This is an early recording scaffold, not yet a complete macro system. Playback, 
 1. Stabilize recording and the native macro data model.
 2. Add a macro library, loading and validation.
 3. Implement playback and compatibility safeguards.
-4. Add format import/export adapters after inspecting real sample files.
+4. Add a live Frame Counter display and timeline readout using the same 240 FPS conversion core.\n5. Implement the Macro Player against the shared timebase, with load validation and exact Press/Release scheduling.\n6. Add format import/export adapters after inspecting real sample files.
 5. Build timeline editing and event analysis.
 6. Implement trajectory sampling and the Hit Borderless overlay.
 7. Add collision/physics-based survivability analysis.
