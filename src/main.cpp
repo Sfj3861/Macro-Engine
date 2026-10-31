@@ -6,11 +6,11 @@
 #include "MacroEngine.hpp"
 
 using namespace geode::prelude;
-using hitborderless::MacroEngine;
+using macroengine::MacroEngine;
 
 // Capture gameplay button transitions. The base layer is also used by the
 // editor, so only events belonging to the active, non-replay PlayLayer are recorded.
-class $modify(HBBaseGameLayer, GJBaseGameLayer) {
+class $modify(MEBaseGameLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
         auto* playLayer = PlayLayer::get();
         if (playLayer && static_cast<GJBaseGameLayer*>(playLayer) == static_cast<GJBaseGameLayer*>(this) && !playLayer->m_useReplay) {
@@ -28,7 +28,7 @@ class $modify(HBBaseGameLayer, GJBaseGameLayer) {
 
 // Count PlayLayer update steps separately from the game's simulation command
 // index and from wall-clock timestamps.
-class $modify(HBPlayLayer, PlayLayer) {
+class $modify(MEPlayLayer, PlayLayer) {
     void postUpdate(float dt) {
         MacroEngine::get().onFrame(dt);
         PlayLayer::postUpdate(dt);
@@ -38,7 +38,7 @@ class $modify(HBPlayLayer, PlayLayer) {
         if (MacroEngine::get().isRecording()) {
             auto path = MacroEngine::get().stopAndSave();
             if (!path.empty()) {
-                log::info("[Hit Borderless] Recording saved: {}", path);
+                log::info("[Macro Engine] Recording saved: {}", path);
             }
         }
         PlayLayer::onQuit();
@@ -48,7 +48,7 @@ class $modify(HBPlayLayer, PlayLayer) {
         if (MacroEngine::get().isRecording()) {
             auto path = MacroEngine::get().stopAndSave();
             if (!path.empty()) {
-                log::info("[Hit Borderless] Recording saved: {}", path);
+                log::info("[Macro Engine] Recording saved: {}", path);
             }
         }
         PlayLayer::onExit();
@@ -56,7 +56,7 @@ class $modify(HBPlayLayer, PlayLayer) {
 };
 
 // Pause-menu control: start recording and resume, or stop and save the take.
-class $modify(HBPauseLayer, PauseLayer) {
+class $modify(MEPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
 
@@ -76,7 +76,7 @@ class $modify(HBPauseLayer, PauseLayer) {
         auto button = CCMenuItemSpriteExtra::create(
             label,
             this,
-            menu_selector(HBPauseLayer::onMacroEngineToggle)
+            menu_selector(MEPauseLayer::onMacroEngineToggle)
         );
         button->setScale(0.38f);
         button->setPosition({
