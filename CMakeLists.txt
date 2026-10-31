@@ -9,13 +9,13 @@ else()
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
 
-project(HitBorderless VERSION 0.1.0)
+project(MacroEngine VERSION 0.2.0)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 if (NOT DEFINED ENV{GEODE_SDK})
-    message(FATAL_ERROR "Unable to find Geode SDK! Set GEODE_SDK to your Geode SDK directory.")
+    message(FATAL_ERROR "Unable to find Geode SDK! Set GEODE_SDK to your SDK directory.")
 endif()
 
 message(STATUS "Using Geode SDK: $ENV{GEODE_SDK}")
