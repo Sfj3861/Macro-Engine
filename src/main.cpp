@@ -236,7 +236,10 @@ class $modify(MEPauseLayer, PauseLayer) {
 
         menu->addChild(button);
 
-        const char* playLabelText = MacroEngine::get().isPlaying()\n            ? "STOP MACRO PLAYBACK"\n            : "PLAY LATEST MACRO";\n        auto playLabel = CCLabelBMFont::create(playLabelText, "bigFont.fnt");
+        const char* playLabelText = MacroEngine::get().isPlaying()
+            ? "STOP MACRO PLAYBACK"
+            : "PLAY LATEST MACRO";
+        auto playLabel = CCLabelBMFont::create(playLabelText, "bigFont.fnt");
         if (playLabel) {
             auto playButton = CCMenuItemSpriteExtra::create(
                 playLabel,
