@@ -78,8 +78,8 @@ class $modify(MEPlayLayer, PlayLayer) {
                 ? samples.size() - maxTrailSamples
                 : 0;
 
-            const MacroPositionSample* previousP1 = nullptr;
-            const MacroPositionSample* previousP2 = nullptr;
+            const macroengine::MacroPositionSample* previousP1 = nullptr;
+            const macroengine::MacroPositionSample* previousP2 = nullptr;
             for (std::size_t i = first; i < samples.size(); ++i) {
                 const auto& sample = samples[i];
                 auto*& previous = sample.player1 ? previousP1 : previousP2;
