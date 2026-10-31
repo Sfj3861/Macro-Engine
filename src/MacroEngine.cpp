@@ -38,7 +38,7 @@ bool MacroEngine::startRecording() {
     return true;
 }
 
-void MacroEngine::recordInput(bool down, int button, bool player1, std::uint64_t gameFrame) {
+void MacroEngine::recordInput(bool down, int button, bool player1, std::uint64_t gameFrame, float x, float y) {
     if (!m_recording) {
         return;
     }
@@ -48,7 +48,9 @@ void MacroEngine::recordInput(bool down, int button, bool player1, std::uint64_t
         .timestampUs = elapsedMicroseconds(),
         .button = button,
         .down = down,
-        .player1 = player1
+        .player1 = player1,
+        .x = x,
+        .y = y
     });
 }
 
@@ -123,7 +125,9 @@ std::string MacroEngine::stopAndSave() {
                    << "\"timestamp_us\":" << event.timestampUs << ","
                    << "\"button\":" << event.button << ","
                    << "\"action\":\"" << (event.down ? "press" : "release") << "\","
-                   << "\"player\":\"" << (event.player1 ? "P1" : "P2") << "\""
+                   << "\"player\":\"" << (event.player1 ? "P1" : "P2") << "\","
+                   << "\"x\":" << std::setprecision(9) << event.x << ","
+                   << "\"y\":" << std::setprecision(9) << event.y
                    << "}";
         }
 
@@ -182,6 +186,14 @@ std::size_t MacroEngine::getInputCount() const {
 
 std::size_t MacroEngine::getTrajectorySampleCount() const {
     return m_positions.size();
+}
+
+const std::vector<MacroInputEvent>& MacroEngine::getInputEvents() const {
+    return m_events;
+}
+
+const std::vector<MacroPositionSample>& MacroEngine::getTrajectory() const {
+    return m_positions;
 }
 
 } // namespace macroengine
