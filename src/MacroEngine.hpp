@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 
-namespace hitborderless {
+namespace macroengine {
 
 struct MacroInputEvent {
     std::uint64_t frame = 0;
@@ -37,4 +37,4 @@ private:
     std::vector<MacroInputEvent> m_events;
 };
 
-} // namespace hitborderless
+} // namespace macroengine
