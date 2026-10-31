@@ -37,6 +37,8 @@ public:
     bool loadLatestMacro(std::string& path, std::string& error);
     bool startPlayback();
     void updatePlayback(const std::function<void(bool, int, bool)>& dispatch);
+    void pausePlayback();
+    void resumePlayback();
     void stopPlayback(const std::function<void(bool, int, bool)>& dispatch = {});
     void recordInput(bool down, int button, bool player1, std::uint64_t gameFrame, float x, float y);
     void recordPlayerPosition(float x, float y, bool player1, std::uint64_t gameFrame);
@@ -65,6 +67,8 @@ private:
     std::chrono::steady_clock::time_point m_startedAt{};
     bool m_playing = false;
     bool m_playbackClockStarted = false;
+    bool m_playbackPaused = false;
+    std::int64_t m_playbackPausedElapsedUs = 0;
     std::chrono::steady_clock::time_point m_playbackStartedAt{};
     std::vector<MacroInputEvent> m_loadedEvents;
     std::size_t m_playbackIndex = 0;
