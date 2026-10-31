@@ -1,0 +1,19 @@
+# Build output
+build/
+build-*/
+cmake-build-*/
+*.geode
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+
+# IDE and local files
+.vscode/
+.idea/
+.vs/
+.cache/
+.DS_Store
