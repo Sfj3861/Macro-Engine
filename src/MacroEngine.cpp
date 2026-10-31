@@ -10,7 +10,7 @@
 
 using namespace geode::prelude;
 
-namespace hitborderless {
+namespace macroengine {
 
 MacroEngine& MacroEngine::get() {
     static MacroEngine instance;
@@ -93,8 +93,8 @@ std::string MacroEngine::stopAndSave() {
         }
 
         output << "{\n"
-               << "  \"format\": \"hit-borderless-macro\",\n"
-               << "  \"schema_version\": 1,\n"
+               << "  \"format\": \"macro-engine\",\n"
+               << "  \"schema_version\": 2,\n"
                << "  \"timebase\": \"steady_clock_microseconds\",\n"
                << "  \"frame_source\": \"GJGameState::m_commandIndex\",\n"
                << "  \"update_steps\": " << m_updateSteps << ",\n"
@@ -109,8 +109,8 @@ std::string MacroEngine::stopAndSave() {
                    << "\"frame\":" << event.frame << ","
                    << "\"timestamp_us\":" << event.timestampUs << ","
                    << "\"button\":" << event.button << ","
-                   << "\"down\":" << (event.down ? "true" : "false") << ","
-                   << "\"player1\":" << (event.player1 ? "true" : "false")
+                   << "\"action\":\"" << (event.down ? "press" : "release") << "\","
+                   << "\"player\":\"" << (event.player1 ? "P1" : "P2") << "\""
                    << "}";
         }
 
@@ -119,6 +119,11 @@ std::string MacroEngine::stopAndSave() {
         }
         output << "]\n}\n";
         output.close();
+
+        if (!output) {
+            log::error("[Macro Engine] Failed while writing macro file");
+            return {};
+        }
 
         const auto result = outputPath.string();
         log::info("[Macro Engine] Saved {} inputs to {}", m_events.size(), result);
@@ -142,4 +147,4 @@ std::size_t MacroEngine::getInputCount() const {
     return m_events.size();
 }
 
-} // namespace hitborderless
+} // namespace macroengine
