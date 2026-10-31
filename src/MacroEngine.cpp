@@ -116,6 +116,8 @@ std::string MacroEngine::stopAndSave() {
                << "  \"format\": \"macro-engine\",\n"
                << "  \"schema_version\": 2,\n"
                << "  \"timebase\": \"steady_clock_microseconds\",\n"
+               << "  \"frame_counter\": {\"reference_fps\": " << timing::kReferenceFps
+               << ", \"rounding\": \"floor\", \"source\": \"timestamp_us\", \"unit\": \"elapsed\"},\n"
                << "  \"frame_source\": \"GJGameState::m_commandIndex\",\n"
                << "  \"update_steps\": " << m_updateSteps << ",\n"
                << "  \"duration_us\": " << durationUs << ",\n"
@@ -129,6 +131,7 @@ std::string MacroEngine::stopAndSave() {
                    << "    {"
                    << "\"frame\":" << event.frame << ","
                    << "\"timestamp_us\":" << event.timestampUs << ","
+                   << "\"normalized_frame_240\":" << timing::normalizedFrame(event.timestampUs) << ","
                    << "\"button\":" << event.button << ","
                    << "\"action\":\"" << (event.down ? "press" : "release") << "\","
                    << "\"player\":\"" << (event.player1 ? "P1" : "P2") << "\","
@@ -148,6 +151,7 @@ std::string MacroEngine::stopAndSave() {
                    << "    {"
                    << "\"frame\":" << sample.frame << ","
                    << "\"timestamp_us\":" << sample.timestampUs << ","
+                   << "\"normalized_frame_240\":" << timing::normalizedFrame(sample.timestampUs) << ","
                    << "\"x\":" << std::setprecision(9) << sample.x << ","
                    << "\"y\":" << std::setprecision(9) << sample.y << ","
                    << "\"player\":\"" << (sample.player1 ? "P1" : "P2") << "\""
@@ -184,6 +188,14 @@ bool MacroEngine::isRecording() const {
 
 std::uint64_t MacroEngine::getUpdateSteps() const {
     return m_updateSteps;
+}
+
+std::int64_t MacroEngine::getElapsedMicroseconds() const {
+    return m_recording ? elapsedMicroseconds() : 0;
+}
+
+std::uint64_t MacroEngine::getCurrentNormalizedFrame() const {
+    return timing::normalizedFrame(getElapsedMicroseconds());
 }
 
 std::size_t MacroEngine::getInputCount() const {
