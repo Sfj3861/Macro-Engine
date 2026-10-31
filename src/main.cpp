@@ -8,8 +8,6 @@
 using namespace geode::prelude;
 using macroengine::MacroEngine;
 
-// Capture gameplay button transitions. The base layer is also used by the
-// editor, so only events belonging to the active, non-replay PlayLayer are recorded.
 class $modify(MEBaseGameLayer, GJBaseGameLayer) {
     void handleButton(bool down, int button, bool isPlayer1) {
         auto* playLayer = PlayLayer::get();
@@ -26,12 +24,26 @@ class $modify(MEBaseGameLayer, GJBaseGameLayer) {
     }
 };
 
-// Count PlayLayer update steps separately from the game's simulation command
-// index and from wall-clock timestamps.
 class $modify(MEPlayLayer, PlayLayer) {
     void postUpdate(float dt) {
-        MacroEngine::get().onFrame(dt);
         PlayLayer::postUpdate(dt);
+
+        auto& engine = MacroEngine::get();
+        if (!engine.isRecording() || this->m_useReplay) {
+            return;
+        }
+
+        engine.onFrame(dt);
+        const auto frame = this->m_gameState.m_commandIndex;
+
+        if (this->m_player1) {
+            const auto position = this->m_player1->getPosition();
+            engine.recordPlayerPosition(position.x, position.y, true, frame);
+        }
+        if (this->m_player2) {
+            const auto position = this->m_player2->getPosition();
+            engine.recordPlayerPosition(position.x, position.y, false, frame);
+        }
     }
 
     void onQuit() {
@@ -55,7 +67,6 @@ class $modify(MEPlayLayer, PlayLayer) {
     }
 };
 
-// Pause-menu control: start recording and resume, or stop and save the take.
 class $modify(MEPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
@@ -103,7 +114,7 @@ class $modify(MEPauseLayer, PauseLayer) {
             else {
                 const auto message = std::string("Macro saved successfully! ")
                     + std::to_string(engine.getInputCount())
-                    + " inputs recorded.";
+                    + " inputs and trajectory samples recorded.";
                 FLAlertLayer::create("Macro Engine", message.c_str(), "Great")->show();
                 log::info("[Macro Engine] Saved file: {}", path);
             }
