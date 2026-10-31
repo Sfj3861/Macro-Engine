@@ -1,66 +1,79 @@
 # Macro Engine
 
-A Geode toolkit for Geometry Dash focused on reliable input macros, playback, analysis and trajectory visualization.
+A Geode toolkit for Geometry Dash focused on input recording, macro playback, timing analysis and trajectory visualization.
 
-## Project modules
+## Current status
 
-- **Macro Recorder:** captures input transitions, timing and player identity.
-- **Macro Player:** next major system; deterministic playback, seeking and compatibility checks are being designed around the shared event timebase.
-- **Macro Analyzer:** planned event, frame and run analysis.
-- **Frame Counter:** shared 240 FPS normalization core is implemented in the recorder data; the in-game display and analysis controls remain to be built.
-- **Hit Borderless:** planned trajectory and collision-context visualization. It is not merely a hitbox viewer.
-- **Layout Mode:** planned simplified level rendering that preserves gameplay geometry and physics.
-- **Showcase Recorder:** planned tools for recording and presenting runs.
+### Macro Recorder
+- Pause-menu control to start and stop recording.
+- Captures Press/Release transitions, button ID and P1/P2 identity.
+- Stores the game's command index and a monotonic microsecond timestamp for every input.
+- Samples P1/P2 positions during gameplay.
+- Saves .macroengine JSON files in the mod's save directory under macros/.
+- Uses a temporary file followed by a rename so an interrupted write is less likely to leave a half-written final macro.
+- Timestamped filenames include milliseconds to reduce collisions.
 
-## Hit Borderless visual language
+### Macro Player — first functional prototype
+- Loads the newest .macroengine file from the macro library.
+- Validates JSON format, schema version, event types, finite positions, chronological order and safety limits before accepting a file.
+- Schedules Press/Release events against the recorded monotonic microsecond timeline.
+- Keeps P1/P2 and button identity.
+- Releases any button still held when playback ends or is stopped.
+- Playback begins on the first resumed gameplay update, rather than while the pause menu is still open.
+- The pause menu has a PLAY LATEST MACRO control.
 
-The planned full overlay uses:
-- A thin yellow line for the player's sampled trajectory.
-- Dark-yellow circles for press events and white circles for release events.
-- Red lines for lethal collision boundaries.
-- Dark-blue lines for solid/supporting surfaces.
-- Green lines for orbs and other special interactive objects.
+This is an initial playback implementation, not a verified frame-perfect player. Events are dispatched from the gameplay update hook, so actual delivery precision is bounded by the game's update cadence and must be measured in Geometry Dash on each target platform. Seeking, speed control, pause/resume, manual macro selection, compatibility fingerprints and in-game validation remain outstanding.
 
-The long-term analyzer should distinguish current survival, danger and a mathematically/physically unavoidable death. It must not label a death inevitable merely because a sprite overlaps a visual decoration: collision geometry, movement state, physics and possible future inputs matter.
+For the first test, record a short macro, return to the same level, pause immediately at the start, and choose PLAY LATEST MACRO. A replay from a different level state, checkpoint, speed or mode is not expected to match.
 
-## Current implementation
+### Frame Counter — first in-game display
+- Shows REC or PLAY state.
+- Displays elapsed time in milliseconds.
+- Displays a normalized elapsed frame count using a fixed 240 FPS reference.
+- The normalized value is derived from the monotonic timestamp, not the monitor refresh rate or the game's command index.
 
-The initial recorder scaffold is present:
-- Pause-menu controls to start and stop a recording.
-- Press/release event capture.
-- P1/P2 identity.
-- Game command-frame index and monotonic microsecond timestamps.
-- PlayLayer update-step count.
-- Per-update P1/P2 position samples with timestamps and command-frame references.
-- Live Hit Borderless prototype: thin yellow P1/P2 trajectory strokes and dark-yellow press / white release markers.
-- JSON-based `.macroengine` file output containing input events (including their positions) and sampled trajectories.
+The normalized frame is a time-analysis unit only. It does not mean the game simulation is running at 240 FPS. A full timeline, event-to-event deltas, frame stepping, filters and analysis controls are still planned.
 
-This is an early recording scaffold, not yet a complete macro system. Playback, robust file validation, imported formats, world-object collision-line rendering, and physics-based survivability analysis are not implemented. The current live trajectory overlay is an early prototype and still needs in-game visual and performance testing.
+### Hit Borderless — live prototype
+- Thin yellow P1/P2 trajectory strokes.
+- Dark-yellow Press markers and white Release markers.
+- Live drawing is limited to a recent sample window to reduce mobile overhead.
 
-## Development order
-
-1. Stabilize recording and the native macro data model.
-2. Add a macro library, loading and validation.
-3. Implement playback and compatibility safeguards.
-4. Add a live Frame Counter display and timeline readout using the same 240 FPS conversion core.\n5. Implement the Macro Player against the shared timebase, with load validation and exact Press/Release scheduling.\n6. Add format import/export adapters after inspecting real sample files.
-5. Build timeline editing and event analysis.
-6. Implement trajectory sampling and the Hit Borderless overlay.
-7. Add collision/physics-based survivability analysis.
-8. Add Layout Mode and Showcase Recorder.
+World-object collision lines, solid surfaces, orbs, collision geometry and physics-based survivability analysis are not implemented. The current overlay still needs visual and performance testing in Geometry Dash.
 
 ## Timing model
 
-Macro Engine keeps separate timing references:
-- The game's command index.
-- PlayLayer update steps.
-- A monotonic microsecond timestamp.
-- A future 240 FPS normalized display frame.
+Macro Engine preserves separate references:
 
-These clocks are not interchangeable. Normalized display frames must be derived from measured event timing, not by assuming the device refresh rate equals the simulation update rate.
+- frame: GJGameState::m_commandIndex, captured from the game.
+- update_steps: number of PlayLayer update callbacks observed during recording.
+- timestamp_us: monotonic elapsed microseconds.
+- normalized_frame_240: floor(timestamp_us * 240 / 1,000,000).
+
+These values are not interchangeable. The normalized frame is useful for a consistent display and analysis scale, while the original timestamp and game frame remain available for accurate interpretation.
+
+## File format
+
+Current native files use format "macro-engine" and schema_version 2. Each input stores its original frame, timestamp, normalized frame, button, action, player and sampled position. The trajectory array stores position samples separately.
+
+The current loader intentionally accepts schema 2 only, limits files to 64 MB and input lists to one million events, and rejects malformed or non-chronological input sequences.
+
+## Development roadmap
+
+1. Test recorder, save/load and playback in Geometry Dash on Android and Windows.
+2. Measure playback timing error and improve scheduling where the game API permits.
+3. Add macro library UI with manual selection, rename and delete.
+4. Expand Frame Counter with event deltas, input markers and timeline controls.
+5. Add seeking, pause/resume, speed control and playback compatibility checks.
+6. Add Practice Mode checkpoint metadata and segment-aware playback.
+7. Add import/export adapters after inspecting real sample files.
+8. Build event editing and analysis.
+9. Complete Hit Borderless object geometry and survivability analysis.
+10. Add Layout Mode and Showcase Recorder.
 
 ## Build
 
-Install the Geode SDK and CLI, then configure `GEODE_SDK` to point to the SDK directory.
+Install the Geode SDK and CLI, then configure GEODE_SDK to point to the SDK directory.
 
 ```sh
 geode build
