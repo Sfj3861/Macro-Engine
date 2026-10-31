@@ -219,7 +219,7 @@ bool MacroEngine::loadMacro(const std::string& path, std::string& error) {
 
         auto parsed = matjson::parse(input);
         if (!parsed) {
-            error = "Invalid macro JSON: " + std::string(parsed.unwrapErr());
+            error = "Invalid macro JSON: " + parsed.unwrapErr().message;
             return false;
         }
 
