@@ -48,6 +48,7 @@ public:
     std::size_t getLoadedInputCount() const;
     std::uint64_t getUpdateSteps() const;
     std::int64_t getElapsedMicroseconds() const;
+    std::int64_t getLastInputIntervalMicroseconds() const;
     std::uint64_t getCurrentNormalizedFrame() const;
     std::size_t getInputCount() const;
     std::size_t getTrajectorySampleCount() const;
@@ -68,6 +69,8 @@ private:
     std::vector<MacroInputEvent> m_loadedEvents;
     std::size_t m_playbackIndex = 0;
     std::vector<std::pair<int, bool>> m_heldButtons;
+    std::int64_t m_previousInputTimestampUs = -1;
+    std::int64_t m_lastInputIntervalUs = -1;
     std::vector<MacroInputEvent> m_events;
     std::vector<MacroPositionSample> m_positions;
 };
