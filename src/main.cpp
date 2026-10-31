@@ -208,6 +208,7 @@ class $modify(MEPlayLayer, PlayLayer) {
 class $modify(MEPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
+        MacroEngine::get().pausePlayback();
 
         auto winSize = CCDirector::sharedDirector()->getWinSize();
         auto menu = CCMenu::create();
@@ -235,7 +236,7 @@ class $modify(MEPauseLayer, PauseLayer) {
 
         menu->addChild(button);
 
-        auto playLabel = CCLabelBMFont::create("PLAY LATEST MACRO", "bigFont.fnt");
+        const char* playLabelText = MacroEngine::get().isPlaying()\n            ? "STOP MACRO PLAYBACK"\n            : "PLAY LATEST MACRO";\n        auto playLabel = CCLabelBMFont::create(playLabelText, "bigFont.fnt");
         if (playLabel) {
             auto playButton = CCMenuItemSpriteExtra::create(
                 playLabel,
@@ -255,6 +256,20 @@ class $modify(MEPauseLayer, PauseLayer) {
 
     void onMacroEnginePlayLatest(CCObject*) {
         auto& engine = MacroEngine::get();
+        if (engine.isPlaying()) {
+            auto* playLayer = PlayLayer::get();
+            if (playLayer) {
+                engine.stopPlayback([playLayer](bool down, int button, bool player1) {
+                    playLayer->handleButton(down, button, player1);
+                });
+            }
+            else {
+                engine.stopPlayback();
+            }
+            this->onResume(nullptr);
+            return;
+        }
+
         std::string path;
         std::string error;
         if (!engine.loadLatestMacro(path, error)) {
@@ -271,6 +286,11 @@ class $modify(MEPauseLayer, PauseLayer) {
         }
         log::info("[Macro Engine] Playing macro: {}", path);
         this->onResume(nullptr);
+    }
+
+    void onResume(CCObject* sender) {
+        MacroEngine::get().resumePlayback();
+        PauseLayer::onResume(sender);
     }
 
     void onMacroEngineToggle(CCObject*) {
