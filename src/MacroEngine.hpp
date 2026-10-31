@@ -63,6 +63,7 @@ private:
     std::uint64_t m_updateSteps = 0;
     std::chrono::steady_clock::time_point m_startedAt{};
     bool m_playing = false;
+    bool m_playbackClockStarted = false;
     std::chrono::steady_clock::time_point m_playbackStartedAt{};
     std::vector<MacroInputEvent> m_loadedEvents;
     std::size_t m_playbackIndex = 0;
