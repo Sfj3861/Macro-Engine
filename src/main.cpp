@@ -34,27 +34,22 @@ class $modify(MEPlayLayer, PlayLayer) {
         CCDrawNode* hitBorderlessDraw = nullptr;
     };
 
-    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
-        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) {
-            return false;
-        }
-
-        auto* draw = CCDrawNode::create();
-        if (draw) {
-            draw->setID("macro-engine-hit-borderless-overlay");
-            draw->setZOrder(10000);
-            this->addChild(draw);
-            m_fields->hitBorderlessDraw = draw;
-        }
-        return true;
-    }
-
     void postUpdate(float dt) {
         PlayLayer::postUpdate(dt);
 
         auto& engine = MacroEngine::get();
         if (!engine.isRecording() || this->m_useReplay) {
             return;
+        }
+
+        if (!m_fields->hitBorderlessDraw) {
+            auto* draw = CCDrawNode::create();
+            if (draw) {
+                draw->setID("macro-engine-hit-borderless-overlay");
+                draw->setZOrder(10000);
+                this->addChild(draw);
+                m_fields->hitBorderlessDraw = draw;
+            }
         }
 
         engine.onFrame(dt);
