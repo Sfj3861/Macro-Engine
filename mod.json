@@ -6,11 +6,11 @@
     "mac": "2.2081",
     "ios": "2.2081"
   },
-  "id": "sfj3861.hit-borderless",
-  "name": "Hit Borderless",
-  "version": "v0.1.0",
+  "id": "sfj3861.macro-engine",
+  "name": "Macro Engine",
+  "version": "v0.2.0",
   "developer": "Sfj3861",
-  "description": "A macro recording and gameplay analysis toolkit for Geometry Dash.",
+  "description": "A Geometry Dash macro recording, playback, analysis and trajectory toolkit.",
   "tags": [
     "gameplay",
     "utility",
