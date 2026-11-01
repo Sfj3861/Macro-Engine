@@ -382,6 +382,7 @@ bool ReplayAnalyzer::importReplay(const std::string& path, AnalysisKind kind,
     m_current = std::move(replay);
     m_currentKind = kind;
     m_hasCurrent = true;
+    ++m_revision;
 
     std::ostringstream summary;
     summary << "Imported " << m_current.inputs.size() << " inputs from " << m_current.sourceFormat
@@ -408,6 +409,10 @@ AnalysisKind ReplayAnalyzer::getCurrentKind() const {
 
 bool ReplayAnalyzer::hasCurrentReplay() const {
     return m_hasCurrent;
+}
+
+std::uint64_t ReplayAnalyzer::getRevision() const {
+    return m_revision;
 }
 
 void ReplayAnalyzer::clear() {
