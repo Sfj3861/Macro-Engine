@@ -18,6 +18,7 @@ class $modify(MEPlayLayer, PlayLayer) {
         CCDrawNode* hitBorderDraw = nullptr;
         CCLabelBMFont* frameCounterLabel = nullptr;
         bool hitBorderDrawn = false;
+        std::uint64_t hitBorderRevision = 0;
     };
 
     void postUpdate(float dt) {
@@ -103,7 +104,8 @@ class $modify(MEPlayLayer, PlayLayer) {
 
         if (m_fields->hitBorderDraw) {
             m_fields->hitBorderDraw->setVisible(true);
-            if (!m_fields->hitBorderDrawn) {
+            const auto revision = analyzer.getRevision();
+            if (!m_fields->hitBorderDrawn || m_fields->hitBorderRevision != revision) {
                 m_fields->hitBorderDraw->clear();
 
                 const macroengine::ReplayPosition* previousP1 = nullptr;
@@ -130,6 +132,7 @@ class $modify(MEPlayLayer, PlayLayer) {
                     previous = &point;
                 }
                 m_fields->hitBorderDrawn = true;
+                m_fields->hitBorderRevision = revision;
             }
         }
     }
