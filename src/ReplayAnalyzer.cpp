@@ -329,8 +329,12 @@ bool parseLegacy(const std::vector<std::uint8_t>& bytes, bool isJson, ReplayData
         return false;
     }
     const auto& root = parsed.unwrap();
+    if (!root.isObject()) {
+        error = "The legacy GDR root must be a JSON object.";
+        return false;
+    }
     const auto& inputs = root["inputs"];
-    if (!root.isObject() || !inputs.isArray()) {
+    if (!inputs.isArray()) {
         error = "The legacy GDR file does not contain a valid inputs array.";
         return false;
     }
