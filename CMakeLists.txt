@@ -23,6 +23,6 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 # Replay format adapters: legacy GDR MessagePack/JSON and modern GDR2.
 CPMAddPackage("gh:maxnut/GDReplayFormat#d8d2f0b1193a46cdf47b413dc832616dd052b6a9")
-target_link_libraries(${PROJECT_NAME} libGDR nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} libGDR)
 
 setup_geode_mod(${PROJECT_NAME})
