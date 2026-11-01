@@ -48,6 +48,7 @@ public:
     const ReplayData& getCurrentReplay() const;
     AnalysisKind getCurrentKind() const;
     bool hasCurrentReplay() const;
+    std::uint64_t getRevision() const;
     void clear();
 
 private:
@@ -55,6 +56,7 @@ private:
     ReplayData m_current;
     AnalysisKind m_currentKind = AnalysisKind::FrameCounter;
     bool m_hasCurrent = false;
+    std::uint64_t m_revision = 0;
 };
 
 } // namespace macroengine
