@@ -97,8 +97,10 @@ class $modify(MEPlayLayer, PlayLayer) {
             if (draw) {
                 draw->setID("macro-engine-hit-border-overlay");
                 draw->setZOrder(10000);
-                this->addChild(draw);
-                m_fields->hitBorderDraw = draw;
+                if (this->m_gameLayer) {
+                    this->m_gameLayer->addChild(draw);
+                    m_fields->hitBorderDraw = draw;
+                }
             }
         }
 
