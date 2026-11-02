@@ -10,7 +10,7 @@
   "name": "Macro Engine",
   "version": "v0.2.0",
   "developer": "Sfj3861",
-  "description": "A Geometry Dash macro recording, playback, analysis and trajectory toolkit.",
+  "description": "A Geometry Dash replay analysis toolkit with Frame Counter and Hit Border.",
   "tags": [
     "gameplay",
     "utility",
