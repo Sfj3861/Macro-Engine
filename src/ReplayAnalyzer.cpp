@@ -103,8 +103,10 @@ private:
 
     bool readLength(std::uint8_t code, std::uint64_t& length) {
         if (code == 0xD9 || code == 0xC4 || code == 0xC7) return readUnsigned(1, length);
-        if (code == 0xDA || code == 0xC5 || code == 0xC8) return readUnsigned(2, length);
-        if (code == 0xDB || code == 0xC6 || code == 0xC9) return readUnsigned(4, length);
+        if (code == 0xDA || code == 0xC5 || code == 0xC8
+            || code == 0xDC || code == 0xDE) return readUnsigned(2, length);
+        if (code == 0xDB || code == 0xC6 || code == 0xC9
+            || code == 0xDD || code == 0xDF) return readUnsigned(4, length);
         return false;
     }
 
@@ -368,13 +370,19 @@ bool parseLegacy(const std::vector<std::uint8_t>& bytes, bool isJson, ReplayData
         input.down = getValue<bool>(item, "down", false);
         out.durationFrames = std::max(out.durationFrames, input.frame);
         out.inputs.push_back(input);
+        // Legacy GDR marks platformer replays through directional button IDs.
+        if (input.button != 1) out.platformer = true;
 
         const double x = getValue<double>(item, "xPosition",
             getValue<double>(item, "xpos", getValue<double>(item, "x", std::numeric_limits<double>::quiet_NaN())));
         const double y = getValue<double>(item, "yPosition",
             getValue<double>(item, "ypos", getValue<double>(item, "y", std::numeric_limits<double>::quiet_NaN())));
-        if (std::isfinite(x) && std::isfinite(y)) {
-            out.positions.push_back({input.frame, static_cast<float>(x), static_cast<float>(y), 0.f, input.player2});
+        const double rotation = getValue<double>(item, "rotation", 0.0);
+        if (std::isfinite(x) && std::isfinite(y) && std::isfinite(rotation)) {
+            out.positions.push_back({
+                input.frame, static_cast<float>(x), static_cast<float>(y),
+                static_cast<float>(rotation), input.player2
+            });
         }
     }
 
